@@ -61,7 +61,7 @@ DMD=dmd
 ## Location of where to write the html documentation files
 
 DOCSRC = ../dlang.org
-STDDOC = $(DOCSRC)/std.ddoc $(DOCSRC)/macros.ddoc
+STDDOC = $(DOCSRC)/std.ddoc
 
 DOC=..\..\html\d\phobos
 #DOC=..\doc\phobos
@@ -108,30 +108,32 @@ SRC_STD_1_HEAVY= std\stdio.d std\stdiobase.d \
 	std\string.d std\format.d \
 	std\file.d
 
+SRC_STD_2_HEAVY= std\range.d
+
 SRC_STD_2a_HEAVY= std\array.d std\functional.d std\path.d std\outbuffer.d std\utf.d
 
 SRC_STD_3= std\csv.d std\math.d std\complex.d std\numeric.d std\bigint.d \
-	std\bitmanip.d std\typecons.d \
-	std\uni.d std\base64.d std\ascii.d \
-	std\demangle.d std\uri.d std\metastrings.d std\mmfile.d std\getopt.d
+    std\bitmanip.d std\typecons.d \
+    std\uni.d std\base64.d std\ascii.d \
+    std\demangle.d std\uri.d std\metastrings.d std\mmfile.d std\getopt.d
 
 SRC_STD_3a= std\signals.d std\typetuple.d std\traits.d \
-	std\encoding.d std\xml.d \
-	std\random.d \
-	std\exception.d \
-	std\compiler.d \
-	std\system.d std\concurrency.d
+    std\encoding.d std\xml.d \
+    std\random.d \
+    std\exception.d \
+    std\compiler.d \
+    std\system.d std\concurrency.d
 
 SRC_STD_3b= std\datetime.d
 
 #can't place SRC_STD_DIGEST in SRC_STD_REST because of out-of-memory issues
 SRC_STD_DIGEST= std\digest\crc.d std\digest\sha.d std\digest\md.d \
-	std\digest\ripemd.d std\digest\digest.d
-
+    std\digest\ripemd.d std\digest\digest.d
+    
 SRC_STD_CONTAINER= std\container\array.d std\container\binaryheap.d \
-	std\container\dlist.d std\container\rbtree.d std\container\slist.d \
-	std\container\util.d std\container\package.d
-
+    std\container\dlist.d std\container\rbtree.d std\container\slist.d \
+    std\container\util.d std\container\package.d
+    
 SRC_STD_4= std\uuid.d $(SRC_STD_DIGEST)
 
 SRC_STD_5_HEAVY= std\algorithm.d
@@ -142,13 +144,14 @@ SRC_STD_6= std\variant.d \
 	std\conv.d std\zip.d std\cstream.d \
 	$(SRC_STD_CONTAINER)
 
-SRC_STD_REST= std\stdint.d \
+SRC_STD_REST= std\regex.d \
+	std\stdint.d \
 	std\json.d \
 	std\parallelism.d \
 	std\mathspecial.d \
 	std\process.d
 
-SRC_STD_ALL= $(SRC_STD_1_HEAVY) $(SRC_STD_2a_HEAVY) \
+SRC_STD_ALL= $(SRC_STD_1_HEAVY) $(SRC_STD_2_HEAVY) $(SRC_STD_2a_HEAVY) \
 	$(SRC_STD_3) $(SRC_STD_3a) $(SRC_STD_3b) $(SRC_STD_4) \
 	$(SRC_STD_5_HEAVY) $(SRC_STD_6) $(SRC_STD_REST)
 
@@ -169,16 +172,9 @@ SRC_STD= std\zlib.d std\zip.d std\stdint.d std\conv.d std\utf.d std\uri.d \
 	std\variant.d std\numeric.d std\bitmanip.d std\complex.d std\mathspecial.d \
 	std\functional.d std\algorithm.d std\array.d std\typecons.d \
 	std\json.d std\xml.d std\encoding.d std\bigint.d std\concurrency.d \
-	std\stdiobase.d std\parallelism.d \
+	std\range.d std\stdiobase.d std\parallelism.d \
+	std\regex.d \
 	std\exception.d std\ascii.d
-
-SRC_STD_REGEX= std\regex\internal\ir.d std\regex\package.d std\regex\internal\parser.d \
-	std\regex\internal\tests.d std\regex\internal\backtracking.d \
-	std\regex\internal\thompson.d std\regex\internal\kickstart.d \
-	std\regex\internal\generator.d
-
-SRC_STD_RANGE= std\range\package.d std\range\primitives.d \
-	std\range\interfaces.d
 
 SRC_STD_NET= std\net\isemail.d std\net\curl.d
 
@@ -200,10 +196,9 @@ SRC_STD_C_OSX= std\c\osx\socket.d
 
 SRC_STD_C_FREEBSD= std\c\freebsd\socket.d
 
-SRC_STD_INTERNAL= std\internal\cstring.d std\internal\processinit.d \
+SRC_STD_INTERNAL= std\internal\processinit.d \
 	std\internal\unicode_tables.d std\internal\unicode_comp.d std\internal\unicode_decomp.d \
-	std\internal\unicode_grapheme.d std\internal\unicode_norm.d std\internal\scopebuffer.d \
-	std\internal\test\dummyrange.d
+	std\internal\unicode_grapheme.d std\internal\unicode_norm.d std\internal\scopebuffer.d
 
 SRC_STD_INTERNAL_DIGEST= std\internal\digest\sha_SSSE3.d
 
@@ -218,7 +213,6 @@ SRC_ETC=
 SRC_ETC_C= etc\c\zlib.d etc\c\curl.d etc\c\sqlite3.d
 
 SRC_TO_COMPILE_NOT_STD= \
-	$(SRC_STD_REGEX) \
 	$(SRC_STD_NET) \
 	$(SRC_STD_C) \
 	$(SRC_STD_WIN) \
@@ -231,7 +225,6 @@ SRC_TO_COMPILE_NOT_STD= \
 	$(SRC_ETC_C)
 
 SRC_TO_COMPILE= $(SRC_STD_ALL) \
-	$(SRC_STD_RANGE) \
 	$(SRC_TO_COMPILE_NOT_STD)
 
 SRC_ZLIB= \
@@ -332,9 +325,7 @@ DOCS=	$(DOC)\object.html \
 	$(DOC)\std_path.html \
 	$(DOC)\std_process.html \
 	$(DOC)\std_random.html \
-	$(DOC)\std_range_package.html \
-	$(DOC)\std_range_primitives.html \
-	$(DOC)\std_range_interfaces.html \
+	$(DOC)\std_range.html \
 	$(DOC)\std_regex.html \
 	$(DOC)\std_signals.html \
 	$(DOC)\std_socket.html \
@@ -387,7 +378,7 @@ UNITTEST_OBJS= unittest1.obj unittest2.obj unittest2a.obj \
 
 unittest : $(LIB)
 	$(DMD) $(UDFLAGS) -L/co -c -unittest -ofunittest1.obj $(SRC_STD_1_HEAVY)
-	$(DMD) $(UDFLAGS) -L/co -c -unittest -ofunittest2.obj $(SRC_STD_RANGE)
+	$(DMD) $(UDFLAGS) -L/co -c -unittest -ofunittest2.obj $(SRC_STD_2_HEAVY)
 	$(DMD) $(UDFLAGS) -L/co -c -unittest -ofunittest2a.obj $(SRC_STD_2a_HEAVY)
 	$(DMD) $(UDFLAGS) -L/co -c -unittest -ofunittest3.obj $(SRC_STD_3)
 	$(DMD) $(UDFLAGS) -L/co -c -unittest -ofunittest3a.obj $(SRC_STD_3a)
@@ -417,7 +408,7 @@ cov : $(SRC_TO_COMPILE) $(LIB)
 	$(DMD) -cov=95 -unittest -main -run std\string.d
 	$(DMD) -cov=71 -unittest -main -run std\format.d
 	$(DMD) -cov=83 -unittest -main -run std\file.d
-	$(DMD) -cov=86 -unittest -main -run std\range\package.d
+	$(DMD) -cov=86 -unittest -main -run std\range.d
 	$(DMD) -cov=95 -unittest -main -run std\array.d
 	$(DMD) -cov=100 -unittest -main -run std\functional.d
 	$(DMD) -cov=96 -unittest -main -run std\path.d
@@ -469,7 +460,7 @@ cov : $(SRC_TO_COMPILE) $(LIB)
 	$(DMD) -cov=90 -unittest -main -run std\conv.d
 	$(DMD) -cov=0  -unittest -main -run std\zip.d
 	$(DMD) -cov=92 -unittest -main -run std\cstream.d
-	$(DMD) -cov=77 -unittest -main -run std\regex\tests.d
+	$(DMD) -cov=77 -unittest -main -run std\regex.d
 	$(DMD) -cov=92 -unittest -main -run std\json.d
 	$(DMD) -cov=87 -unittest -main -run std\parallelism.d
 	$(DMD) -cov=50 -unittest -main -run std\mathspecial.d
@@ -604,15 +595,6 @@ $(DOC)\std_container_util.html : $(STDDOC) std\container\util.d
 $(DOC)\std_container_package.html : $(STDDOC) std\container\package.d
 	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_container_package.html $(STDDOC) std\container\package.d
 
-$(DOC)\std_range_package.html : $(STDDOC) std\range\package.d
-	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_range_package.html $(STDDOC) std\range\package.d
-
-$(DOC)\std_range_primitives.html : $(STDDOC) std\range\primitives.d
-	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_range_primitives.html $(STDDOC) std\range\primitives.d
-
-$(DOC)\std_range_interfaces.html : $(STDDOC) std\range\interfaces.d
-	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_range_interfaces.html $(STDDOC) std\range\interfaces.d
-
 $(DOC)\std_cstream.html : $(STDDOC) std\cstream.d
 	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_cstream.html $(STDDOC) std\cstream.d
 
@@ -673,11 +655,11 @@ $(DOC)\std_process.html : $(STDDOC) std\process.d
 $(DOC)\std_random.html : $(STDDOC) std\random.d
 	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_random.html $(STDDOC) std\random.d
 
-$(DOC)\std_range.html : $(STDDOC) std\range\package.d
-	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_range.html $(STDDOC) std\range\package.d
+$(DOC)\std_range.html : $(STDDOC) std\range.d
+	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_range.html $(STDDOC) std\range.d
 
-$(DOC)\std_regex.html : $(STDDOC) std\regex\package.d
-	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_regex.html $(STDDOC) std\regex\package.d
+$(DOC)\std_regex.html : $(STDDOC) std\regex.d
+	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_regex.html $(STDDOC) std\regex.d
 
 $(DOC)\std_signals.html : $(STDDOC) std\signals.d
 	$(DMD) -c -o- $(DDOCFLAGS) -Df$(DOC)\std_signals.html $(STDDOC) std\signals.d
@@ -819,7 +801,7 @@ zip : win32.mak win64.mak posix.mak $(STDDOC) $(SRC) \
 	$(SRC_STD_C_WIN) $(SRC_STD_C_LINUX) $(SRC_STD_C_OSX) $(SRC_STD_C_FREEBSD) \
 	$(SRC_ETC) $(SRC_ETC_C) $(SRC_ZLIB) $(SRC_STD_NET) $(SRC_STD_DIGEST) $(SRC_STD_CONTAINER) \
 	$(SRC_STD_INTERNAL) $(SRC_STD_INTERNAL_DIGEST) $(SRC_STD_INTERNAL_MATH) \
-	$(SRC_STD_INTERNAL_WINDOWS) $(SRC_STD_REGEX) $(SRC_STD_RANGE)
+	$(SRC_STD_INTERNAL_WINDOWS)
 	del phobos.zip
 	zip32 -u phobos win32.mak win64.mak posix.mak $(STDDOC)
 	zip32 -u phobos $(SRC)
@@ -839,8 +821,6 @@ zip : win32.mak win64.mak posix.mak $(STDDOC) $(SRC) \
 	zip32 -u phobos $(SRC_STD_NET)
 	zip32 -u phobos $(SRC_STD_DIGEST)
 	zip32 -u phobos $(SRC_STD_CONTAINER)
-	zip32 -u phobos $(SRC_STD_REGEX)
-	zip32 -u phobos $(SRC_STD_RANGE)
 
 phobos.zip : zip
 
