@@ -1,9 +1,36 @@
 module std.container.sorted;
+			
 
 import std.range;
 import std.traits;
 
 public import std.container.util;
+version(unittest) import std.stdio;
+
+/**
+	True if T provides an std.container interface
+	with random access.
+*/
+template isRAContainer(T)
+{
+	enum isRAContainer = isRandomAccessRange!(typeof(T.init[])) 
+		&&	is(typeof(
+			() {
+				T t = T.init;
+				t.insert(ElementType!(T.Range).init);	
+				t.removeAny();
+			 }
+		));
+}
+
+///
+unittest
+{
+	import std.container : Array, RedBlackTree;
+	static assert(isRAContainer!(Array!int));
+	static assert(!isRAContainer!(RedBlackTree!int));
+	static assert(!isRAContainer!(int[]));
+}
 
 // Sorted adapter 
 /**
@@ -23,21 +50,21 @@ struct Sorted(Store, alias less = "a < b")
     private: 
     // Comparison predicate
 	alias comp = binaryFun!(less);
-	static if(isRandomAccessRange!(Store))
+ 	static if(isRAContainer!(Store))
 	{
-		alias _Range = SortedRange!(Store, comp);
-		alias StoreRange = Range;
-		enum storeIsContainer = false;
-	}
- 	else static if(isRandomAccessRange!(typeof(Store.init[])))
-	{
-		alias _Range = SortedRange!(Store.Range, comp);
-		alias StoreRange = Store.Range;
+		alias _Store = Store;
 		enum storeIsContainer = true;
+	}
+	else static if(isRandomAccessRange!(Store))
+	{
+		import std.container.fixedarray;
+		alias _Store = FixedArray!Store;
+		enum storeIsContainer = false;
 	}
 	else
 		static assert(false, "Store must be a random access range or a container providing one");
 
+	alias _Range = SortedRange!(_Store.Range, comp);
 	alias Element = ElementType!_Range;	
 
 	// disable assignment via Range
@@ -63,32 +90,10 @@ struct Sorted(Store, alias less = "a < b")
     import std.algorithm : move, min;
     import std.typecons : RefCounted, RefCountedAutoInitialize;
 
-// Really weird @@BUG@@: if you comment out the "private:" label below,
-// std.algorithm can't unittest anymore
-//private:
-
-    // The payload includes the support store and the effective length
-    private static struct Data
-    {
-        Store _store;
-        size_t _length;
-    }
-    private RefCounted!(Data, RefCountedAutoInitialize.no) _payload;
-    // Convenience accessors
-    private @property ref Store _store()
-    {
-        assert(_payload.refCountedStore.isInitialized);
-        return _payload._store;
-    }
-    private @property ref size_t _length()
-    {
-        assert(_payload.refCountedStore.isInitialized);
-        return _payload._length;
-    }
-
+    private _Store _store;
 
     // Asserts that the store is sorted 
-    private void assertValid()
+    private void assertSorted()
     {
         debug
         {
@@ -101,7 +106,7 @@ public:
     /**
        Sorts store.  If $(D initialSize) is
        specified, only the first $(D initialSize) elements in $(D s)
-       are transformed into a heap, after which the heap can grow up
+       are sorted, after which the heap can grow up
        to $(D r.length) (if $(D Store) is a range) or indefinitely (if
        $(D Store) is a container with $(D insertBack)). Performs
        $(BIGOH min(r.length, initialSize)) evaluations of $(D less).
@@ -117,15 +122,17 @@ brake Sorted
      */
     void acquire(Store s, size_t initialSize = size_t.max)
     {
-        _payload.refCountedStore.ensureInitialized();
-        _store = move(s);
-        _length = min(_store.length, initialSize);
-        if (_length < 2) return;
+		static if(storeIsContainer)
+        	_store = move(s);
+		else
+			_store = _Store(move(s));
+        initialSize = min(_store.length, initialSize);
+		_store.length = initialSize;
+        if (length < 2) return;
 
-		std.algorithm.sort!(comp)(_store[0 .. _length]);		
-        assertValid();
+		std.algorithm.sort!(comp)(_store[0 .. length]);		
+        assertSorted();
     }
-
 
 
 /**
@@ -133,25 +140,26 @@ Takes ownership of a store assuming it already was sorted
 	*/
     void assume(Store s, size_t initialSize = size_t.max)
     {
-        _payload.refCountedStore.ensureInitialized();
-        _store = s;
-        _length = min(_store.length, initialSize);
-        assertValid();
+		static if(storeIsContainer)
+			_store = move(s);
+		else
+        	_store = _Store(move(s));
+        _store.length = min(_store.length, initialSize);
+        assertSorted();
     }
 
 /**
 Release the store. Returns the portion of the store from $(D 0) up to
 $(D length). The return value is sorted.
      */
-    auto release()
+    Store release()
     {
-        if (!_payload.refCountedStore.isInitialized)
-        {
-            return typeof(_store[0 .. _length]).init;
-        }
-        assertValid();
-        auto result = _store[0 .. _length];
-        _payload = _payload.init;
+        assertSorted();
+		static if(storeIsContainer)
+        	auto result = _store;
+		else
+			auto result = _store.release();
+        _store = _Store.init;
         return result;
     }
 
@@ -160,7 +168,7 @@ Returns $(D true) if the store is _empty, $(D false) otherwise.
      */
     @property bool empty()
     {
-        return !length;
+        return length == 0;
     }
 
 /**
@@ -170,17 +178,16 @@ support a $(D dup) method.
     @property Sorted dup()
     {
         Sorted result;
-        if (!_payload.refCountedStore.isInitialized) return result;
-        result.assume(_store.dup(), length);
+		result._store = _store.dup();
         return result;
     }
 
 /**
-Returns the _length of the store.
+Returns the length of the store.
      */
     @property size_t length()
     {
-        return _payload.refCountedStore.isInitialized ? _length : 0;
+        return _store.length;
     }
 
 /**
@@ -190,15 +197,7 @@ underlying store (if the store is a container).
      */
     @property size_t capacity()
     {
-        if (!_payload.refCountedStore.isInitialized) return 0;
-        static if (is(typeof(_store.capacity) : size_t))
-        {
-            return _store.capacity;
-        }
-        else
-        {
-            return _store.length;
-        }
+		return _store.capacity;
     }
 
 /**
@@ -218,7 +217,7 @@ according to $(D less).
     @property ElementType!Store back()
     {
         enforce(!empty, "Cannot call back on an empty range.");
-        return _store[_length - 1];
+        return _store.back();
     }
 
 /**
@@ -226,37 +225,9 @@ Clears the heap by detaching it from the underlying store.
      */
     void clear()
     {
-        _payload = _payload.init;
+        _store = _Store.init;
     }
 
-
-	size_t _insert(Value)(Value value)
-	{
-        _payload.refCountedStore.ensureInitialized();
-        static if (is(typeof(_store.insertBack(value))))
-        {
-            if (length == _store.length)
-            {
-                // reallocate
-                _store.insertBack(value);
-            }
-            else
-            {
-                // no reallocation
-                _store[_length] = value;
-            }
-        }
-        else
-        {
-            // can't grow
-            enforce(length < _store.length,
-                    "Cannot grow Sorted created over a range");
-            _store[_length] = value;
-        }
-        ++_length;
-	
-		return 1;
-	}
 
 /**
 Inserts $(D value) into the store. If the underlying store is a range
@@ -266,50 +237,42 @@ and $(D length == capacity), throws an exception.
     size_t insertBack(Value)(Value value)
         if (isImplicitlyConvertible!(Value, ElementType!Store))
     {
-		_insert(value);
-		std.algorithm.completeSort!(comp)(assumeSorted!comp(_store[0 .. _length-1]), _store[_length-1 .. _length]);	
-        debug(Sorted) assertValid();
+		_store.insertBack(value);
+		std.algorithm.completeSort!(comp)(assumeSorted!comp(_store[0 .. length-1]), _store[length-1 .. length]);	
+        debug(Sorted) assertSorted();
         return 1;
     }
 /** 
-	Inserts all elements of range $(D stuff) into store. If the underlying
-	store is a range and has not enough space left, throws an exception.
+Inserts all elements of range $(D stuff) into store. If the underlying
+store is a range and has not enough space left, throws an exception.
 	*/
     size_t insertBack(Range)(Range stuff)
         if (isInputRange!Range 
 		   && isImplicitlyConvertible!(ElementType!Range, ElementType!Store))
 	{
-        _payload.refCountedStore.ensureInitialized();
-
-		static if(!storeIsContainer && hasLength!Range)
-		{
-			enforce(stuff.length > capacity - _length, 
-				"Cannot grow underlying range");
-		}
 
 		// reserve space if underlying container supports it
 		static if(__traits(compiles, _store.reserve(stuff.length)))
-			_store.reserve(stuff.length);
+			_store.reserve(length + stuff.length);
 
 		// insert all at once, if possible
+		size_t count;
 		static if(__traits(compiles, _store.insertBack(stuff)))
 		{
-			size_t count = _store.insertBack(stuff);
-			_length += count;
+			count = _store.insertBack(stuff);
 		}
 		else
 		{
-			size_t count;
 			foreach(s; stuff) 
 			{ 
-				_insert(s);
+				insertBack(s);
 				count += 1;
 			}
 		}
 
-		assert(count <= _length);
-		std.algorithm.completeSort!(comp)(assumeSorted!comp(_store[0 .. _length-count]), _store[_length-count .. _length]);	
-        debug(Sorted) assertValid();
+		assert(count <= length);
+		std.algorithm.completeSort!(comp)(assumeSorted!comp(_store[0 .. length-count]), _store[length-count .. length]);	
+        debug(Sorted) assertSorted();
         return 1;
 	}
 
@@ -333,10 +296,31 @@ and $(D length == capacity), throws an exception.
 			// move elements to the end and reduce length of array
 			swapRanges(r.payload, retro(this[].payload));
 
-		_length -= count;
-	
-		assertValid();	
+		_store.length = length - count;
+		sort!comp(_store[]);	
+		assertSorted();	
 	}
+
+/// ditto
+	void remove(Take!Range r)
+	{
+		Range source = r.source;
+		auto newT = source.payload.take(r.length);
+		import std.algorithm : swapRanges;
+		size_t count = r.length;
+		// if the underlying store supports it natively
+		static if(__traits(compiles, _store.remove(newT)))
+			_store.remove(newT);
+		else
+			// move elements to the end and reduce length of array
+			swapRanges(newT, retro(this[].payload));
+
+		_store.length = length - count;
+		sort!comp(_store[]);	
+		assertSorted();	
+	}
+
+	
 
 /+
 /**
@@ -356,9 +340,9 @@ and $(D length == capacity), throws an exception.
 			// move elements to the end and reduce length of array
 			swapRanges(r.payload, retro(this[].payload));
 
-		_length -= count;
+		length -= count;
 	
-		assertValid();	
+		assertSorted();	
 	}
 +/
 /**
@@ -367,7 +351,7 @@ Removes the largest element
     void removeBack()
     {
         enforce(!empty, "Cannot call removeFront on an empty range.");
-        --_length;
+        _store.removeBack();
     }
 
     /// ditto
@@ -382,8 +366,9 @@ that are expensive to copy.
      */
     ElementType!Store removeAny()
     {
+		auto result = move(_store.back());
         removeBack();
-        return _store[_length];
+        return result;
     }
 
 /** 
@@ -392,15 +377,15 @@ Return SortedRange for _store
 	Range opIndex()
 	{
 		import std.range : assumeSorted;
-		return Range(_store[0 .. _length].assumeSorted!comp);
+		return Range(_store[0 .. length].assumeSorted!comp);
 	}
 
 /**
 	Return SortedRange for _store
 	*/
-	Range opIndex(size_t start, size_t stop)
+	Range opSlice(size_t start, size_t stop)
 	{
-		return Range(_store[0 .. _length].assumeSorted!comp);
+		return Range(_store[0 .. length].assumeSorted!comp);
 	}
 
 /**
@@ -411,8 +396,9 @@ Return SortedRange for _store
 		return _store[idx];
 	}
 
-	size_t opSlice() { return _length; }
+	size_t opSlice() { return length; }
 
+	size_t opDollar() { return length; }	
 
 
 /**
@@ -521,10 +507,15 @@ unittest
     		auto s = sorted!("a < b")(store);
     		assert(s.back == 16);
 
-			auto removeThese = s[].drop(s.length - 4);
+			auto removeThese = s[].drop(s.length - 2);
 			s.remove(removeThese);
+			assert(equal(s[], [1, 2, 3, 4, 7, 8, 9, 10]));
 
-			assert(s.back == 8);
+			s.remove(s[].drop(2).take(2));
+			assert(equal(s[], [1, 2, 7, 8, 9, 10]));
+
+			s.remove(s[].take(2));
+			assert(equal(s[], [ 7, 8, 9, 10]));
 		}
 	}
 }
@@ -565,3 +556,4 @@ unittest
 		assert(sa.length == 20);
 	}
 }
+
