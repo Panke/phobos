@@ -398,6 +398,11 @@ Sorted!(Store, less) sorted(alias less = "a < b", Store)(Store s,
     return Sorted!(Store, less)(s, initialSize);
 }
 
+version(unittest)
+{
+	import std.typetuple;
+	import std.algorithm;
+}
 /// Example sorting an array by wrapping it in Sorted
 unittest
 {
