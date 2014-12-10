@@ -10,7 +10,7 @@ version(unittest) import std.stdio;
 /**
 Array type that uses a random access range as fixed storage location. 
 No memory is ever allocated. Throws if not enough space is left
-for an operation to succeed.*/
+for an operation to succeed. */
 struct FixedArray(Store)
 {
     alias Range = Store;
@@ -23,10 +23,10 @@ struct FixedArray(Store)
 /**
 Constructor taking a random access range
      */
-    this(Store s, size_t initalLength = size_t.max)
+    this(Store s, size_t initialLength = size_t.max)
     {
         _store = s;
-        _length = min(initalLength, _store.length);
+        _length = min(initialLength, _store.length);
     }
 
 
@@ -263,7 +263,6 @@ Complexity: $(BIGOH log(n)).
     }
     /// ditto
     alias stableRemoveAny = removeAny;
-
 /**
 Inserts $(D value) to the front or back of the container. $(D stuff)
 can be a value convertible to $(D T) or a range of objects convertible
@@ -359,7 +358,7 @@ unittest
 {
     size_t[12] store;
     auto fx = FixedArray!(size_t[])(store[], 0);
-    
+
     foreach(i; 0 .. store.length)
         fx.insertBack(i);
     
@@ -386,8 +385,26 @@ unittest
 
 }
 
+/**
+ * Wrap store in a fixedArray and return it
+ */
+auto fixedArray(Store)(Store s, size_t initialLength = size_t.max)
+{
+	auto fA = FixedArray!(Store)(s, initialLength);
+	return fA;
+}
+
+/// create a fixed array over  double[]
 unittest
 {
-    
+	double[] store = new double[100];
+	auto fa = fixedArray(store, 50);
+
+	assert(fa.length == 50);
+	assert(fa.capacity == 100);
+
+	assert(10 == fa.removeBack(10));
+	fa[$-1] = 12.0;
+	assert(fa.removeAny() == 12.0);
 }
 
