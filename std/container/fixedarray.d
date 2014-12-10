@@ -13,20 +13,20 @@ No memory is ever allocated. Throws if not enough space is left
 for an operation to succeed.*/
 struct FixedArray(Store)
 {
-	alias Range = Store;
-	alias T = ElementType!Range;
+    alias Range = Store;
+    alias T = ElementType!Range;
     private {
-		 Store _store;
-		 size_t _length;
-	}
+         Store _store;
+         size_t _length;
+    }
 
 /**
 Constructor taking a random access range
      */
     this(Store s, size_t initalLength = size_t.max)
     {
-		_store = s;
-		_length = min(initalLength, _store.length);
+        _store = s;
+        _length = min(initalLength, _store.length);
     }
 
 
@@ -41,8 +41,8 @@ Comparison for equality.
     /// ditto
     bool opEquals(ref const FixedArray rhs) const
     {
-		if(length != rhs.length)
-			return false;
+        if(length != rhs.length)
+            return false;
         return equal(_store[0 .. _length], rhs._store[0 .. _length]);
     }
 
@@ -92,11 +92,11 @@ Precondition: $(D 0 <= nlength && nlength <= capacity)
 Complexity: $(BIGOH 1).
      */
 
-	@property void length(size_t nlength) 
-	{
-		enforce(0 <= nlength && nlength <= capacity);
-		_length = nlength;
-	}
+    @property void length(size_t nlength) 
+    {
+        enforce(0 <= nlength && nlength <= capacity);
+        _length = nlength;
+    }
 /**
 Returns the maximum number of elements the container can store 
 
@@ -131,6 +131,7 @@ Complexity: $(BIGOH 1)
         version (assert) if (i > j || j > length) throw new RangeError();
         return _store[i .. j];
     }
+
 
 /**
 Forward to $(D opSlice().front) and $(D opSlice().back), respectively.
@@ -229,7 +230,7 @@ Complexity: $(BIGOH n)
      */
     void clear()
     {
-		_length = 0;
+        _length = 0;
     }
 
 /**
@@ -239,8 +240,8 @@ instance is unuseable afterwarts.
      */
     Store release()
     {
-		auto result = move(_store);
-		return result[0 .. _length];
+        auto result = move(_store);
+        return result[0 .. _length];
     }
 
 /**
@@ -277,29 +278,29 @@ elements in $(D stuff)
     size_t insertBack(Stuff)(Stuff stuff)
     if (isImplicitlyConvertible!(Stuff, T))
     {
-		if(length == capacity)
-			throw new RangeError("FixedArray is full");
+        if(length == capacity)
+            throw new RangeError("FixedArray is full");
         _store[_length] = stuff;
-		++_length;
-		return 1;
+        ++_length;
+        return 1;
     }
 
-	/// ditto
+    /// ditto
     size_t insertBack(Stuff)(Stuff stuff)
     if(isInputRange!Stuff && isImplicitlyConvertible!(ElementType!Stuff, T))
-	{
-		static if(hasLength!Stuff)
-		{
-			if(stuff.length > (capacity - length))
-				throw new RangeError("not enough room for stuff");
-		}
-			
-		size_t count;
-		foreach(s; stuff)
-			count += insertBack(s);
-		
-		return count;
-	}
+    {
+        static if(hasLength!Stuff)
+        {
+            if(stuff.length > (capacity - length))
+                throw new RangeError("not enough room for stuff");
+        }
+            
+        size_t count;
+        foreach(s; stuff)
+            count += insertBack(s);
+        
+        return count;
+    }
 
     /// ditto
     alias insert = insertBack;
@@ -316,11 +317,11 @@ Complexity: $(BIGOH log(n)).
     void removeBack()
     {
         enforce(!empty);
-		/* static if superfluos? */
+        /* static if superfluos? */
         static if (hasElaborateDestructor!T)
             .destroy(_store[length - 1]);
-		
-		--_length;
+        
+        --_length;
 
     }
     /// ditto
@@ -356,32 +357,37 @@ Complexity: $(BIGOH howMany).
 /// use static array as store
 unittest
 {
-	size_t[12] store;
-	auto fx = FixedArray!(size_t[])(store[], 0);
-	
-	foreach(i; 0 .. store.length)
-		fx.insertBack(i);
-	
-	foreach(i; 1 .. store.length)
-	{
-		assert(fx[i] > fx[i - 1]);
-	}
+    size_t[12] store;
+    auto fx = FixedArray!(size_t[])(store[], 0);
+    
+    foreach(i; 0 .. store.length)
+        fx.insertBack(i);
+    
+    foreach(i; 1 .. store.length)
+    {
+        assert(fx[i] > fx[i - 1]);
+    }
 
-	try {
-		fx.insertBack(13);
-		assert(false);
-	}
-	catch(RangeError e) {}
+    try {
+        fx.insertBack(13);
+        assert(false);
+    }
+    catch(RangeError e) {}
 
-	fx[] = 1;
-	foreach(i; fx[])
-	{
-		assert(i == 1);
-	}
+    auto firstFive = fx[0 .. 5];
+    assert(equal(firstFive, [0, 1, 2, 3, 4]));
+
+    fx[] = 1;
+    foreach(i; fx[])
+    {
+        assert(i == 1);
+    }
+
+
 }
 
 unittest
 {
-	
+    
 }
 
