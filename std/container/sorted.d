@@ -1,12 +1,10 @@
 module std.container.sorted;
             
-
 import std.range;
 import std.traits;
 
 public import std.container.util;
 version(unittest) import std.stdio;
-
 /**
     True if T provides an std.container interface
     with random access.
@@ -36,14 +34,12 @@ unittest
 /**
 Implements a automatically sorted 
 container on top of a given random-access range type (usually $(D
-T[])) or a random-access container type (usually $(D Array!T)). The
-documentation of $(D Sorted) will refer to the underlying range or
-container as the $(I store) of the heap.
+T[])) or a random-access container type (usually $(D Array!T)).
+The documentation of $(D Sorted) will refer to the underlying range or
+container as the $(I store).
 
-If $(D Store) is a range, the $(D Sorted) cannot grow beyond the
-size of that range. If $(D Store) is a container that supports $(D
-insertBack), the $(D Sorted) may grow by adding elements to the
-container.
+If $(D Store) is a range, it is internally wrapped by std.container.FixedArray,
+and $(D Sorted) cannot grow beyond the size of that range. If $(D Store) is a container that supports $(D insertBack), the $(D Sorted) may grow by adding elements to the container.
      */
 struct Sorted(Store, alias less = "a < b")
 {
@@ -51,7 +47,7 @@ struct Sorted(Store, alias less = "a < b")
     import std.exception : enforce;
     import std.range: SortedRange;
     import std.algorithm : move, min;
-
+    
     private: 
     // Comparison predicate
     alias comp = binaryFun!(less);
@@ -104,7 +100,7 @@ public:
     /**
        Sorts store.  If $(D initialSize) is
        specified, only the first $(D initialSize) elements in $(D s)
-       are sorted, after which the heap can grow up
+       are sorted, after which the store can grow up
        to $(D r.length) (if $(D Store) is a range) or indefinitely (if
        $(D Store) is a container with $(D insertBack)). Performs
        $(BIGOH min(r.length, initialSize)) evaluations of $(D less).
@@ -181,13 +177,13 @@ support a $(D dup) method.
     }
 
 /**
-Returns the length of the store.
+Returns the number of sorted elements.
      */
     @property size_t length()
     {
         return _store.length;
     }
-
+  
 /**
 Returns the _capacity of the store, which is the length of the
 underlying store (if the store is a range) or the _capacity of the
@@ -199,7 +195,7 @@ underlying store (if the store is a container).
     }
 
 /**
-Returns a copy of the _front of the heap, which is the smallest element
+Returns a copy of the _front of the store, which is the smallest element
 according to $(D less).
      */
     @property ElementType!Store front()
@@ -209,7 +205,7 @@ according to $(D less).
     }
 
 /**
-Returns a copy of the _back of the heap, which is the biggest element
+Returns a copy of the _back of store, which is the biggest element
 according to $(D less).
      */
     @property ElementType!Store back()
@@ -219,7 +215,7 @@ according to $(D less).
     }
 
 /**
-Clears the heap by detaching it from the underlying store.
+Clears the sorted by detaching it from the underlying store.
      */
     void clear()
     {
@@ -271,7 +267,7 @@ store is a range and has not enough space left, throws an exception.
         assert(count <= length);
         std.algorithm.completeSort!(comp)(assumeSorted!comp(_store[0 .. length-count]), _store[length-count .. length]);    
         debug(Sorted) assertSorted();
-        return 1;
+        return count;
     }
 
     /// ditto   
@@ -318,31 +314,6 @@ store is a range and has not enough space left, throws an exception.
         assertSorted(); 
     }
 
-    
-
-/+
-/**
-      Removes the given range from the store. Note that
-      this method requires r to be optained from this store
-      and the store to be a container.
-     */
-
-    void remove(Take!Range r)
-    {
-        import std.algorithm : swapRanges;
-        size_t count = r.length;
-        // if the underlying store supports it natively
-        static if(__traits(compiles, _store.remove(r)))
-            _store.remove(r);
-        else
-            // move elements to the end and reduce length of array
-            swapRanges(r.payload, retro(this[].payload));
-
-        length -= count;
-    
-        assertSorted(); 
-    }
-+/
 /**
 Removes the largest element 
      */
@@ -357,10 +328,8 @@ Removes the largest element
 
 
 /**
-Removes the largest element from the heap and returns a copy of
-it. The element still resides in the heap's store. For performance
-reasons you may want to use $(D removeFront) with heaps of objects
-that are expensive to copy.
+Removes the largest element from the store and returns a copy of
+it. This will use the removeBack function of the underlying store.
      */
     ElementType!Store removeAny()
     {
@@ -420,7 +389,7 @@ Container primitives
 }
 
 /**
-Convenience function that returns a $(D BinaryHeap!Store) object
+Convenience function that returns a $(D Sorted!(Store, less)) object
 initialized with $(D s) and $(D initialSize).
  */
 Sorted!(Store, less) sorted(alias less = "a < b", Store)(Store s,
@@ -558,4 +527,3 @@ unittest
         assert(sa.length == 20);
     }
 }
-
