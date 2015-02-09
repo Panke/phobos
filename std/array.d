@@ -1554,7 +1554,11 @@ private enum bool hasCheapIteration(R) = isArray!R;
         an allocated array of Elements
 
    See_Also:
-        $(XREF algorithm, joiner)
+        $(XREF algorithm, joiner) for a lazy version
+
+	     $(XREF range, ElementType)
+
+		  $(XREF range, ElementEncodingType)
   +/
 ElementEncodingType!(ElementType!RoR)[] join(RoR, R)(RoR ror, R sep)
     if(isInputRange!RoR &&
